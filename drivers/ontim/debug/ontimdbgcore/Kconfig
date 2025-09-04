@@ -1,0 +1,11 @@
+#
+# ontim_core_dev_dbg driver configuration
+#
+# NOTE:  the reason this doesn't show SPI slave support is mostly that
+# nobody's needed a slave side API yet.  The master-role API is not
+# fully appropriate there, so it'd need some thought to do well.
+#
+config ONTIM_DEBUG
+	tristate "ontim_core_dev_dbg driver support"
+	help
+	  Say Y or M here if you want to build ntim_core_dev_dbg driver.

@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (C) 2022-2023 HMD. All rights reserved.
+ */
+
+
+#ifndef _HYPERHOLD_AREA_H
+#define _HYPERHOLD_AREA_H
+
+#include <linux/memcontrol.h>
+
+struct hyperhold_area {
+	unsigned long size;
+	int nr_objs;
+	int nr_exts;
+	int nr_mcgs;
+
+	unsigned long *bitmap;
+	atomic_t last_alloc_bit;
+
+	struct hh_list_table *ext_table;
+	struct hh_list_head *ext;
+
+	struct hh_list_table *obj_table;
+	struct hh_list_head *rmap;
+	struct hh_list_head *lru;
+
+	atomic_t stored_exts;
+	atomic_t *ext_stored_pages;
+	atomic64_t *ext_stored_size;
+
+	unsigned int mcg_id_cnt[MEM_CGROUP_ID_MAX + 1];
+
+	struct hyperhold_cache *cache;
+	struct shrinker cache_shrinker;
+	atomic64_t cache_shrinker_runs;
+	atomic64_t cache_shrinker_reclaim_pages;
+
+	atomic64_t cache_move_runs;
+	atomic64_t cache_move_exts;
+
+	bool fault_out_cache_enable;
+	bool batch_out_cache_enable;
+	bool reclaim_in_cache_enable;
+};
+
+#define AREA_WATERMARK_HIGH 80
+#define AREA_WATERMARK_LOW 70
+
+int hp_high_ext_num(int tot);
+int hp_low_ext_num(int tot);
+
+int esentry_extid(unsigned long e);
+int esentry_pgid(unsigned long e);
+int esentry_pgoff(unsigned long e);
+
+struct mem_cgroup *get_mem_cgroup(unsigned short mcg_id);
+
+int obj_idx(struct hyperhold_area *area, int idx);
+int ext_idx(struct hyperhold_area *area, int idx);
+int mcg_idx(struct hyperhold_area *area, int idx);
+
+void free_hyperhold_area(struct hyperhold_area *area);
+struct hyperhold_area *alloc_hyperhold_area(unsigned long ori_size,
+					    unsigned long comp_size);
+void hyperhold_free_extent(struct hyperhold_area *area, int ext_id);
+int hyperhold_alloc_extent(struct hyperhold_area *area, struct mem_cgroup *mcg);
+int get_extent(struct hyperhold_area *area, int ext_id);
+void put_extent(struct hyperhold_area *area, int ext_id);
+int get_memcg_extent(struct hyperhold_area *area, struct mem_cgroup *mcg,
+		bool (*filter)(struct hyperhold_area *area, int ext_id));
+int get_memcg_zram_entry(struct hyperhold_area *area, struct mem_cgroup *mcg);
+int get_extent_zram_entry(struct hyperhold_area *area, int ext_id);
+
+unsigned long hyperhold_shrink_cache(struct hyperhold_area *area,
+		unsigned long nr_pages);
+bool hp_cache_init(struct hyperhold_area *area);
+#endif

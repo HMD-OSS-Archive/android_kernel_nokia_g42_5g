@@ -1,0 +1,2 @@
+source "drivers/ontim/hwinfo/Kconfig"
+source "drivers/ontim/debug/Kconfig"

@@ -1,0 +1,12 @@
+#
+#Fingerprint
+#
+menuconfig INPUT_FINGERPRINT
+	  tristate "Fingerprint Config Choosen"
+	  default y
+	  help
+	  Say Y to can config finperprint manufacturer
+
+source "drivers/input/fingerprint/fps_chipone_Q00/Kconfig"
+source "drivers/input/fingerprint/fps_focaltech_Q00/Kconfig"
+

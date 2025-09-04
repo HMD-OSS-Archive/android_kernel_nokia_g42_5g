@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0
+
+config SUPPORT_CRASH_REASON
+	bool "enable store crash information to sharememory(smem)"
+	default n

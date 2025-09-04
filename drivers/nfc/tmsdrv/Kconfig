@@ -1,0 +1,14 @@
+#
+# TMS devices
+#
+
+menu "TMS devices support"
+
+config TMS_DEVICE
+    tristate "TMS Driver"
+    help
+        Say Y here if you have TMS device.
+
+source "drivers/nfc/tmsdrv/nfc/Kconfig"
+source "drivers/nfc/tmsdrv/guidev/Kconfig"
+endmenu

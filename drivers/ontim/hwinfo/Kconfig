@@ -1,0 +1,14 @@
+menu "ONTIM hardware info"
+
+config ONTIM_HWINFO
+	tristate "Product Hardward Info and boardid"
+	help
+	  Say Y or M here if you want to build Product Hardward Info and gpio boardid.
+
+config HBM_SUPPORT
+        bool "HBM NODE SUPPORT"
+	default n
+        help
+	  HBM node support, say y,will create this node
+
+endmenu
