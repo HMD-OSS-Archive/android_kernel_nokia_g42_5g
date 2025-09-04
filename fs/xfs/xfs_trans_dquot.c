@@ -15,7 +15,6 @@
 #include "xfs_trans_priv.h"
 #include "xfs_quota.h"
 #include "xfs_qm.h"
-#include "xfs_error.h"
 
 STATIC void	xfs_trans_alloc_dqinfo(xfs_trans_t *);
 
@@ -26,8 +25,8 @@ STATIC void	xfs_trans_alloc_dqinfo(xfs_trans_t *);
  */
 void
 xfs_trans_dqjoin(
-	struct xfs_trans	*tp,
-	struct xfs_dquot	*dqp)
+	xfs_trans_t	*tp,
+	xfs_dquot_t	*dqp)
 {
 	ASSERT(XFS_DQ_IS_LOCKED(dqp));
 	ASSERT(dqp->q_logitem.qli_dquot == dqp);
@@ -50,8 +49,8 @@ xfs_trans_dqjoin(
  */
 void
 xfs_trans_log_dquot(
-	struct xfs_trans	*tp,
-	struct xfs_dquot	*dqp)
+	xfs_trans_t	*tp,
+	xfs_dquot_t	*dqp)
 {
 	ASSERT(XFS_DQ_IS_LOCKED(dqp));
 
@@ -487,12 +486,12 @@ xfs_trans_apply_dquot_deltas(
  */
 void
 xfs_trans_unreserve_and_mod_dquots(
-	struct xfs_trans	*tp)
+	xfs_trans_t		*tp)
 {
 	int			i, j;
-	struct xfs_dquot	*dqp;
+	xfs_dquot_t		*dqp;
 	struct xfs_dqtrx	*qtrx, *qa;
-	bool			locked;
+	bool                    locked;
 
 	if (!tp->t_dqinfo || !(tp->t_flags & XFS_TRANS_DQ_DIRTY))
 		return;
@@ -572,21 +571,21 @@ xfs_quota_warn(
  */
 STATIC int
 xfs_trans_dqresv(
-	struct xfs_trans	*tp,
-	struct xfs_mount	*mp,
-	struct xfs_dquot	*dqp,
-	int64_t			nblks,
-	long			ninos,
-	uint			flags)
+	xfs_trans_t	*tp,
+	xfs_mount_t	*mp,
+	xfs_dquot_t	*dqp,
+	int64_t		nblks,
+	long		ninos,
+	uint		flags)
 {
-	xfs_qcnt_t		hardlimit;
-	xfs_qcnt_t		softlimit;
-	time_t			timer;
-	xfs_qwarncnt_t		warns;
-	xfs_qwarncnt_t		warnlimit;
-	xfs_qcnt_t		total_count;
-	xfs_qcnt_t		*resbcountp;
-	xfs_quotainfo_t		*q = mp->m_quotainfo;
+	xfs_qcnt_t	hardlimit;
+	xfs_qcnt_t	softlimit;
+	time_t		timer;
+	xfs_qwarncnt_t	warns;
+	xfs_qwarncnt_t	warnlimit;
+	xfs_qcnt_t	total_count;
+	xfs_qcnt_t	*resbcountp;
+	xfs_quotainfo_t	*q = mp->m_quotainfo;
 	struct xfs_def_quota	*defq;
 
 
@@ -701,14 +700,9 @@ xfs_trans_dqresv(
 					    XFS_TRANS_DQ_RES_INOS,
 					    ninos);
 	}
-
-	if (XFS_IS_CORRUPT(mp,
-		dqp->q_res_bcount < be64_to_cpu(dqp->q_core.d_bcount)) ||
-	    XFS_IS_CORRUPT(mp,
-		dqp->q_res_rtbcount < be64_to_cpu(dqp->q_core.d_rtbcount)) ||
-	    XFS_IS_CORRUPT(mp,
-		dqp->q_res_icount < be64_to_cpu(dqp->q_core.d_icount)))
-		goto error_corrupt;
+	ASSERT(dqp->q_res_bcount >= be64_to_cpu(dqp->q_core.d_bcount));
+	ASSERT(dqp->q_res_rtbcount >= be64_to_cpu(dqp->q_core.d_rtbcount));
+	ASSERT(dqp->q_res_icount >= be64_to_cpu(dqp->q_core.d_icount));
 
 	xfs_dqunlock(dqp);
 	return 0;
@@ -718,10 +712,6 @@ error_return:
 	if (flags & XFS_QMOPT_ENOSPC)
 		return -ENOSPC;
 	return -EDQUOT;
-error_corrupt:
-	xfs_dqunlock(dqp);
-	xfs_force_shutdown(mp, SHUTDOWN_CORRUPT_INCORE);
-	return -EFSCORRUPTED;
 }
 
 
@@ -766,8 +756,7 @@ xfs_trans_reserve_quota_bydquots(
 	}
 
 	if (gdqp) {
-		error = xfs_trans_dqresv(tp, mp, gdqp, nblks, ninos,
-					(flags & ~XFS_QMOPT_ENOSPC));
+		error = xfs_trans_dqresv(tp, mp, gdqp, nblks, ninos, flags);
 		if (error)
 			goto unwind_usr;
 	}
@@ -835,13 +824,13 @@ xfs_trans_reserve_quota_nblks(
 /*
  * This routine is called to allocate a quotaoff log item.
  */
-struct xfs_qoff_logitem *
+xfs_qoff_logitem_t *
 xfs_trans_get_qoff_item(
-	struct xfs_trans	*tp,
-	struct xfs_qoff_logitem	*startqoff,
+	xfs_trans_t		*tp,
+	xfs_qoff_logitem_t	*startqoff,
 	uint			flags)
 {
-	struct xfs_qoff_logitem	*q;
+	xfs_qoff_logitem_t	*q;
 
 	ASSERT(tp != NULL);
 
@@ -863,8 +852,8 @@ xfs_trans_get_qoff_item(
  */
 void
 xfs_trans_log_quotaoff_item(
-	struct xfs_trans	*tp,
-	struct xfs_qoff_logitem	*qlp)
+	xfs_trans_t		*tp,
+	xfs_qoff_logitem_t	*qlp)
 {
 	tp->t_flags |= XFS_TRANS_DIRTY;
 	set_bit(XFS_LI_DIRTY, &qlp->qql_item.li_flags);

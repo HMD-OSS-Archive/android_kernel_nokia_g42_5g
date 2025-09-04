@@ -31,6 +31,7 @@
 #include <linux/input/mt.h>
 #include <linux/interrupt.h>
 #include "omnivision_tcm_core.h"
+int gesture_dubbletap = 0;
 
 #define TYPE_B_PROTOCOL
 
@@ -680,7 +681,7 @@ static void touch_report(void)
 #if WAKEUP_GESTURE
 	if (touch_data->gesture_id == GESTURE_DOUBLE_TAP &&
 			 tcm_hcd->in_suspend &&
-			 (tcm_hcd->wakeup_gesture_enabled || gesture_dubbleclick_en)) 
+			 (tcm_hcd->wakeup_gesture_enabled || gesture_dubbletap)) 
 	{
 		input_report_key(touch_hcd->input_dev, KEY_WAKEUP, 1);
 		input_sync(touch_hcd->input_dev);
@@ -1248,7 +1249,7 @@ int touch_early_suspend(struct ovt_tcm_hcd *tcm_hcd)
 	if (!touch_hcd)
 		return 0;
 
-	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbleclick_en)
+	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbletap)
 		touch_hcd->suspend_touch = false;
 	else
 		touch_hcd->suspend_touch = true;
@@ -1269,7 +1270,7 @@ int touch_suspend(struct ovt_tcm_hcd *tcm_hcd)
 
 	touch_free_objects();
 
-	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbleclick_en) {
+	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbletap) {
 		if (!touch_hcd->irq_wake) {
 			enable_irq_wake(tcm_hcd->irq);
 			touch_hcd->irq_wake = true;
@@ -1277,7 +1278,6 @@ int touch_suspend(struct ovt_tcm_hcd *tcm_hcd)
 
 		touch_hcd->suspend_touch = false;
 
-        //add by zhangshaohu for tp suspend timing, 2023/3/1
         mdelay(120);
 
 		retval = tcm_hcd->set_dynamic_config(tcm_hcd,
@@ -1302,7 +1302,7 @@ int touch_resume(struct ovt_tcm_hcd *tcm_hcd)
 
 	touch_hcd->suspend_touch = false;
 
-	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbleclick_en) {
+	if (tcm_hcd->wakeup_gesture_enabled || gesture_dubbletap) {
 		if (touch_hcd->irq_wake) {
 			disable_irq_wake(tcm_hcd->irq);
 			touch_hcd->irq_wake = false;

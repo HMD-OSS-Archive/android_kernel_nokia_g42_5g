@@ -943,11 +943,9 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 #endif
 
 	if (ieee->iw_mode == IW_MODE_MONITOR) {
-		unsigned int len = skb->len;
-
 		ieee80211_monitor_rx(ieee, skb, rx_stats);
 		stats->rx_packets++;
-		stats->rx_bytes += len;
+		stats->rx_bytes += skb->len;
 		return 1;
 	}
 
@@ -1098,7 +1096,7 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 	    stype != IEEE80211_STYPE_DATA_CFACK &&
 	    stype != IEEE80211_STYPE_DATA_CFPOLL &&
 	    stype != IEEE80211_STYPE_DATA_CFACKPOLL &&
-	    stype != IEEE80211_STYPE_QOS_DATA//add by David,2006.8.4
+	    stype != IEEE80211_STYPE_QOS_DATA
 	    ) {
 		if (stype != IEEE80211_STYPE_NULLFUNC)
 			IEEE80211_DEBUG_DROP(

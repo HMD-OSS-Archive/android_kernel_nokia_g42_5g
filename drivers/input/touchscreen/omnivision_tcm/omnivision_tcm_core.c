@@ -3400,7 +3400,7 @@ static int ovt_tcm_resume(struct device *dev)
 		}
 		goto mod_resume;
 	} else {
-		    if (!gesture_dubbleclick_en)
+		    if (!gesture_dubbletap)
 			    tcm_hcd->enable_irq(tcm_hcd, true, NULL);
 
 #ifdef RESET_ON_RESUME
@@ -3505,7 +3505,7 @@ static void speedup_resume(struct work_struct *work)
 		}
 		goto mod_resume;
 	} else {
-            if (!gesture_dubbleclick_en)
+            if (!gesture_dubbletap)
 			    tcm_hcd->enable_irq(tcm_hcd, true, NULL);
 
 #ifdef RESET_ON_RESUME
@@ -3610,7 +3610,7 @@ static int ovt_tcm_suspend(struct device *dev)
 
 	mutex_unlock(&mod_pool.mutex);
 
-    if (!gesture_dubbleclick_en) {
+    if (!gesture_dubbletap) {
 		tcm_hcd->enable_irq(tcm_hcd, false, true);
 		if (atomic_read(&tcm_hcd->command_status) != CMD_IDLE) {
 			atomic_set(&tcm_hcd->command_status, CMD_ERROR);
@@ -3652,14 +3652,14 @@ static int ovt_tcm_early_suspend(struct device *dev)
 
 		mutex_unlock(&tcm_hcd->suspend_resume_mutex);
 		LOGN(tcm_hcd->pdev->dev.parent,"ovt_tcm_early_suspend exit\n");
-		if (!gesture_dubbleclick_en)
+		if (!gesture_dubbletap)
         {
 			tcm_hcd->enable_irq(tcm_hcd, false, true);
 		}
 		return 0;
 	}
 
-    if (!gesture_dubbleclick_en)
+    if (!gesture_dubbletap)
     {
 		tcm_hcd->enable_irq(tcm_hcd, false, true);
 	}
@@ -3768,7 +3768,7 @@ static int ovt_tcm_early_suspend(struct device *dev)
 		return 0;
 	}
 
-	if (!gesture_dubbleclick_en)
+	if (!gesture_dubbletap)
     {
 		// retval = tcm_hcd->sleep(tcm_hcd, true);
 		// if (retval < 0) {

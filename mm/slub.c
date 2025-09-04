@@ -1215,7 +1215,7 @@ static noinline int free_debug_processing(
 	struct kmem_cache_node *n = get_node(s, page_to_nid(page));
 	void *object = head;
 	int cnt = 0;
-	unsigned long flags;
+	unsigned long uninitialized_var(flags);
 	int ret = 0;
 
 	spin_lock_irqsave(&n->list_lock, flags);
@@ -2928,7 +2928,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
 	struct page new;
 	unsigned long counters;
 	struct kmem_cache_node *n = NULL;
-	unsigned long flags;
+	unsigned long uninitialized_var(flags);
 
 	stat(s, FREE_SLOWPATH);
 
@@ -5972,8 +5972,7 @@ static char *create_unique_id(struct kmem_cache *s)
 	char *name = kmalloc(ID_STR_LENGTH, GFP_KERNEL);
 	char *p = name;
 
-	if (!name)
-		return ERR_PTR(-ENOMEM);
+	BUG_ON(!name);
 
 	*p++ = ':';
 	/*
@@ -6055,8 +6054,6 @@ static int sysfs_slab_add(struct kmem_cache *s)
 		 * for the symlinks.
 		 */
 		name = create_unique_id(s);
-		if (IS_ERR(name))
-			return PTR_ERR(name);
 	}
 
 	s->kobj.kset = kset;

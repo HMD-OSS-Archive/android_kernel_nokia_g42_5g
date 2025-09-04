@@ -698,15 +698,11 @@ static int snd_compr_pause(struct snd_compr_stream *stream)
 {
 	int retval;
 
-	switch (stream->runtime->state) {
-	case SNDRV_PCM_STATE_RUNNING:
-		retval = stream->ops->trigger(stream, SNDRV_PCM_TRIGGER_PAUSE_PUSH);
-		if (!retval)
-			stream->runtime->state = SNDRV_PCM_STATE_PAUSED;
-		break;
-	default:
+	if (stream->runtime->state != SNDRV_PCM_STATE_RUNNING)
 		return -EPERM;
-	}
+	retval = stream->ops->trigger(stream, SNDRV_PCM_TRIGGER_PAUSE_PUSH);
+	if (!retval)
+		stream->runtime->state = SNDRV_PCM_STATE_PAUSED;
 	return retval;
 }
 
@@ -714,15 +710,11 @@ static int snd_compr_resume(struct snd_compr_stream *stream)
 {
 	int retval;
 
-	switch (stream->runtime->state) {
-	case SNDRV_PCM_STATE_PAUSED:
-		retval = stream->ops->trigger(stream, SNDRV_PCM_TRIGGER_PAUSE_RELEASE);
-		if (!retval)
-			stream->runtime->state = SNDRV_PCM_STATE_RUNNING;
-		break;
-	default:
+	if (stream->runtime->state != SNDRV_PCM_STATE_PAUSED)
 		return -EPERM;
-	}
+	retval = stream->ops->trigger(stream, SNDRV_PCM_TRIGGER_PAUSE_RELEASE);
+	if (!retval)
+		stream->runtime->state = SNDRV_PCM_STATE_RUNNING;
 	return retval;
 }
 

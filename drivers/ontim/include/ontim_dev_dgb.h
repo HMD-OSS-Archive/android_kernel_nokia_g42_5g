@@ -1,6 +1,5 @@
 
 #define NAME_LEN 64
-//+add by hzb
 enum ontim_dev_attr_type {
     ONTIM_DEV_ARTTR_TYPE_STR,
     ONTIM_DEV_ARTTR_TYPE_VAL_RO,
@@ -10,7 +9,6 @@ enum ontim_dev_attr_type {
     ONTIM_DEV_ARTTR_TYPE_EXEC,
     ONTIM_DEV_ARTTR_TYPE_EXEC_PARAM
 };
-//-add by hzb
 struct dev_arrt
 {
     const char *dev_attr_name;

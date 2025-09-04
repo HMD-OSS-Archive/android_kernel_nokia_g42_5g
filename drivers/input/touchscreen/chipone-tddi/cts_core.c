@@ -11,7 +11,7 @@
 #include "cts_earjack_detect.h"
 #include "cts_tcs.h"
 //extern int gesture_dubbleclick_en;
-int gesture_dubbleclick_en;
+int gesture_dubbleclick_en = 0;
 /* added by zhangshaohu for shadow-132 (20221228) begin */
 #if CONFIG_ONTIM_HWINFO_SUPPORT
 #include <ontim_dev_dgb.h>
@@ -1597,7 +1597,6 @@ static int cts_set_dev_boot_mode(const struct cts_device *cts_dev, u8 boot_mode)
 
     return 0;
 }
-//add by zhangshaohu 2023/02/11, begin
 #if CONFIG_ONTIM_HWINFO_SUPPORT
 static void ontim_dev_get_cts_info(struct cts_device *cts_dev)
 {
@@ -1613,7 +1612,6 @@ static void ontim_dev_get_cts_info(struct cts_device *cts_dev)
 	snprintf(version, sizeof(version),"lc-icnl9916-version#fw:%04x_VID:0x95", fwdata->version);
 }
 #endif
-//add by zhangshaohu 2023/02/11, end
 
 static int cts_init_fwdata(struct cts_device *cts_dev)
 {
@@ -1762,11 +1760,9 @@ static int cts_init_fwdata(struct cts_device *cts_dev)
     cts_err("int_data_method: %d", fwdata->int_data_method);
     cts_err("int_data_types: %d", fwdata->int_data_types);
     cts_err("int_data_size: %ld", fwdata->int_data_size);
-//add by zhangshaohu 2023/02/11 begin
 #if CONFIG_ONTIM_HWINFO_SUPPORT
 	ontim_dev_get_cts_info(cts_dev);
 #endif
-//add by zhangshaohu 2023/02/11 end
     return 0;
 }
 

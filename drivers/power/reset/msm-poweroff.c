@@ -468,17 +468,13 @@ static void msm_restart_prepare(const char *cmd)
 			__raw_writel(0x77665501, restart_reason);
 		}
 
-		// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 begin
 		if (strncmp(cmd, "modem_unsigned", sizeof("modem_unsigned")) == 0) {
 			reason = PON_RESTART_REASON_MODEM_UNSIGNED;
 		}
-		// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 end
 
-		// Add by david.zhou for IMEI missing or corrupted begin
 		if (strncmp(cmd, "imei_corrupted", sizeof("imei_corrupted")) == 0) {
 			reason = PON_RESTART_REASON_IMEI_CORRUPTED;
 		}
-		// Add by david.zhou for IMEI missing or corrupted end
 
 
 		if (reason && nvmem_cell)

@@ -81,7 +81,6 @@ static ssize_t ontim_core_debug_dev_attr_show(struct kobject *kobj,
              {
                  if(dev_attr_array[i].dev_attr_name){
                      if(!strcmp(dev_attr_array[i].dev_attr_name,attr->attr.name)){
-//+modify by hzb
                           if (dev_attr_array[i].dev_attr_type == ONTIM_DEV_ARTTR_TYPE_VAL_8BIT)
                               status=sprintf(buf,"0x%02x\n",*((u8 *)dev_attr_array[i].dev_attr_context));
                           else if (dev_attr_array[i].dev_attr_type == ONTIM_DEV_ARTTR_TYPE_VAL_16BIT)
@@ -94,7 +93,6 @@ static ssize_t ontim_core_debug_dev_attr_show(struct kobject *kobj,
                               status=sprintf(buf,"0x%x\n",*((u32 *)dev_attr_array[i].dev_attr_context));
                           else
                               status=sprintf(buf,"%s\n",(char *)dev_attr_array[i].dev_attr_context);
-//-modify by hzb
                           break;
                      }
                  }
@@ -104,7 +102,6 @@ static ssize_t ontim_core_debug_dev_attr_show(struct kobject *kobj,
 	return status;
 }
 
-//+add by hzb
 static ssize_t ontim_core_debug_dev_attr_store(struct kobject *kobj, struct kobj_attribute *attr,
 			 const char *buf, size_t count)
 {
@@ -152,7 +149,6 @@ static ssize_t ontim_core_debug_dev_attr_store(struct kobject *kobj, struct kobj
     mutex_unlock(&sysfs_lock);
     return count;
 }
-//-add by hzb
 
 static ssize_t ontim_core_debug_dev_attr_debug_trace_level_show(struct kobject *kobj,
         struct kobj_attribute *attr, char *buf)

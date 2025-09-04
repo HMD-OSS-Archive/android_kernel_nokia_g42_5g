@@ -800,7 +800,6 @@ u32 rtl8188eu_hal_init(struct adapter *Adapter)
 
 	/*  */
 	/*  Disable BAR, suggested by Scott */
-	/*  2010.04.09 add by hpfan */
 	/*  */
 	usb_write32(Adapter, REG_BAR_MODE_CTRL, 0x0201ffff);
 
@@ -1263,7 +1262,6 @@ void rtw_hal_set_hwreg(struct adapter *Adapter, u8 variable, u8 *val)
 			hal_set_brate_cfg(val, &BrateCfg);
 			DBG_88E("HW_VAR_BASIC_RATE: BrateCfg(%#x)\n", BrateCfg);
 
-			/* 2011.03.30 add by Luke Lee */
 			/* CCK 2M ACK should be disabled for some BCM and Atheros AP IOT */
 			/* because CCK 2M has poor TXEVM */
 			/* CCK 5.5M & 11M ACK should be enabled for better performance */

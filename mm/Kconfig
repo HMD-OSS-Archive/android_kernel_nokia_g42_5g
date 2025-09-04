@@ -534,14 +534,6 @@ config CMA
 
 	  If unsure, say "n".
 
-config EMERGENCY_MEMORY
-	bool "Enable emergency memory"
-	default n
-	help
-	 This enables the migration type MIGRATE_EMERGENCY which reserves
-	 a small amount of memory for non-costly non-NOWARN page allocation
-	 failure.
-
 config CMA_DEBUG
 	bool "CMA debug messages (DEVELOPMENT)"
 	depends on DEBUG_KERNEL && CMA

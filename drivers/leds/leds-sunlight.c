@@ -20,10 +20,24 @@
 
 struct mutex sunlight_lock;
 struct platform_device *pdev = NULL;
+//extern struct  backlight_device *s_backlight;
+struct  backlight_device *s_backlight = NULL;
+//extern int sunlight_flag;
+int sunlight_flag = 0;
+//extern int sunlight_set_sde_backlight(struct backlight_device *bd);
 static void sunlight_led_set(struct led_classdev *led_cdev,
 		enum led_brightness value)
 {
 	mutex_lock(&sunlight_lock);
+	if(s_backlight){
+		if(value == 1){
+			sunlight_flag = 1;
+			//sunlight_set_sde_backlight(s_backlight);
+		}else{
+			sunlight_flag = 0;
+			//sunlight_set_sde_backlight(s_backlight);
+		}
+	}
 	mutex_unlock(&sunlight_lock);
 }
 

@@ -161,12 +161,13 @@ static int follow_pfn_pte(struct vm_area_struct *vma, unsigned long address,
 }
 
 /*
- * FOLL_FORCE or a forced COW break can write even to unwritable pte's,
- * but only after we've gone through a COW cycle and they are dirty.
+ * FOLL_FORCE can write to even unwritable pte's, but only
+ * after we've gone through a COW cycle and they are dirty.
  */
 static inline bool can_follow_write_pte(pte_t pte, unsigned int flags)
 {
-	return pte_write(pte) || ((flags & FOLL_COW) && pte_dirty(pte));
+	return pte_write(pte) ||
+	    ((flags & FOLL_FORCE) && (flags & FOLL_COW) && pte_dirty(pte));
 }
 
 /*
@@ -187,17 +188,6 @@ static struct page *follow_page_pte(struct vm_area_struct *vma,
 	struct page *page;
 	spinlock_t *ptl;
 	pte_t *ptep, pte;
-
-	/*
-	 * Considering PTE level hugetlb, like continuous-PTE hugetlb on
-	 * ARM64 architecture.
-	 */
-	if (is_vm_hugetlb_page(vma)) {
-		page = follow_huge_pmd_pte(vma, address, flags);
-		if (page)
-			return page;
-		return no_page_table(vma, flags);
-	}
 
 retry:
 	if (unlikely(pmd_bad(*pmd)))
@@ -344,7 +334,7 @@ static struct page *follow_pmd_mask(struct vm_area_struct *vma,
 	if (pmd_none(pmdval))
 		return no_page_table(vma, flags);
 	if (pmd_huge(pmdval) && vma->vm_flags & VM_HUGETLB) {
-		page = follow_huge_pmd_pte(vma, address, flags);
+		page = follow_huge_pmd(mm, address, pmd, flags);
 		if (page)
 			return page;
 		return no_page_table(vma, flags);
@@ -843,18 +833,12 @@ static long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 				goto out;
 			}
 			if (is_vm_hugetlb_page(vma)) {
-				if (should_force_cow_break(vma, foll_flags))
-					foll_flags |= FOLL_WRITE;
 				i = follow_hugetlb_page(mm, vma, pages, vmas,
 						&start, &nr_pages, i,
-						foll_flags, nonblocking);
+						gup_flags, nonblocking);
 				continue;
 			}
 		}
-
-		if (should_force_cow_break(vma, foll_flags))
-			foll_flags |= FOLL_WRITE;
-
 retry:
 		/*
 		 * If we have a pending SIGKILL, don't keep faulting pages and
@@ -2251,7 +2235,7 @@ static int gup_pud_range(p4d_t *p4dp, p4d_t p4d, unsigned long addr, unsigned lo
 		next = pud_addr_end(addr, end);
 		if (pud_none(pud))
 			return 0;
-		if (unlikely(pud_huge(pud) || pud_devmap(pud))) {
+		if (unlikely(pud_huge(pud))) {
 			if (!gup_huge_pud(pud, pudp, addr, next, flags,
 					  pages, nr))
 				return 0;
@@ -2451,17 +2435,10 @@ int get_user_pages_fast(unsigned long start, int nr_pages,
 	if (unlikely(!access_ok((void __user *)start, len)))
 		return -EFAULT;
 
-	/*
-	 * The FAST_GUP case requires FOLL_WRITE even for pure reads,
-	 * because get_user_pages() may need to cause an early COW in
-	 * order to avoid confusing the normal COW routines. So only
-	 * targets that are already writable are safe to do by just
-	 * looking at the page tables.
-	 */
 	if (IS_ENABLED(CONFIG_HAVE_FAST_GUP) &&
 	    gup_fast_permitted(start, end)) {
 		local_irq_disable();
-		gup_pgd_range(addr, end, gup_flags | FOLL_WRITE, pages, &nr);
+		gup_pgd_range(addr, end, gup_flags, pages, &nr);
 		local_irq_enable();
 		ret = nr;
 	}

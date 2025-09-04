@@ -993,7 +993,6 @@ sint ap2sta_data_frame(
 			*psta = rtw_get_stainfo(pstapriv, pattrib->bssid); /*  get sta_info */
 			if (!*psta) {
 
-				/* for AP multicast issue , modify by yiwei */
 				static unsigned long send_issue_deauth_time;
 
 				/* DBG_871X("After send deauth , %u ms has elapsed.\n", jiffies_to_msecs(jiffies - send_issue_deauth_time)); */

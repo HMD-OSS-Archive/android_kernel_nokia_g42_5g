@@ -663,8 +663,4 @@ extern void init_fcma_reserved_pageblock(struct page *page);
 #endif
 #endif
 
-#ifdef CONFIG_EMERGENCY_MEMORY
-extern void emergency_mm_init(void);
-#endif
-
 #endif /* __LINUX_GFP_H */

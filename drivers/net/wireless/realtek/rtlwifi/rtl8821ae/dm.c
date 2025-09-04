@@ -786,7 +786,6 @@ static void rtl8821ae_dm_dig(struct ieee80211_hw *hw)
 		return;
 	}
 
-	/*add by Neil Chen to avoid PSD is processing*/
 	dig_min_0 = dm_digtable->dig_min_0;
 	first_connect = (mac->link_state >= MAC80211_LINKED) &&
 			(!dm_digtable->media_connect_0);

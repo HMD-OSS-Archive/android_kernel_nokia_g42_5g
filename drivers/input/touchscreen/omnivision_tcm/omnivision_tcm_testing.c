@@ -1522,7 +1522,6 @@ static int testing_do_testing(void)
 	tcm_hcd = testing_hcd->tcm_hcd;
 
 	if (!g_testing_output_buf) {
-	    //modify by zhangshaohu for mmitest of TP-selftest
 		g_testing_output_buf = vmalloc(OUTPUT_TO_CSV_STRING_LEN);
 		if (!g_testing_output_buf) {
 			LOGE(tcm_hcd->pdev->dev.parent,

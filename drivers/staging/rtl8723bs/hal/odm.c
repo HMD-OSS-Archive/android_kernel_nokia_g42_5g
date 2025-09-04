@@ -1045,14 +1045,14 @@ u32 ODM_Get_Rate_Bitmap(
 	case (ODM_WM_AC|ODM_WM_A):
 
 		if (pDM_Odm->RFType == RF_1T1R) {
-			if (rssi_level == 1)				/*  add by Gary for ac-series */
+			if (rssi_level == 1)				
 				rate_bitmap = 0x003f8000;
 			else if (rssi_level == 2)
 				rate_bitmap = 0x003ff000;
 			else
 				rate_bitmap = 0x003ff010;
 		} else {
-			if (rssi_level == 1)				/*  add by Gary for ac-series */
+			if (rssi_level == 1)				
 				rate_bitmap = 0xfe3f8000;       /*  VHT 2SS MCS3~9 */
 			else if (rssi_level == 2)
 				rate_bitmap = 0xfffff000;       /*  VHT 2SS MCS0~9 */

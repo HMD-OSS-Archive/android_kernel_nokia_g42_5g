@@ -181,7 +181,6 @@
 #define PINCTRL_STATE_SUSPEND   "pmx_ts_suspend"
 #define PINCTRL_STATE_RELEASE   "pmx_ts_release"
 
-/*add by guchong*/
 #ifdef PHONE_GESTURE
 extern u16 gesture_coordinates_x[GESTURE_COORDS_REPORT_MAX];
 extern u16 gesture_coordinates_y[GESTURE_COORDS_REPORT_MAX];

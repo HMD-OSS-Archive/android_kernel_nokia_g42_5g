@@ -138,7 +138,9 @@ struct ovt_tcm_board_data {
 #define TOUCH_INPUT_PHYS_PATH "omnivision_tcm/touch_input"
 
 #define WAKEUP_GESTURE (1)
-extern int gesture_dubbleclick_en;
+//extern int gesture_dubbleclick_en;
+//int gesture_dubbletap = 1;
+extern int gesture_dubbletap;
 #define SPEED_UP_RESUME 1
 
 /* The chunk size RD_CHUNK_SIZE/WR_CHUNK_SIZE will not apply in HDL sensors */

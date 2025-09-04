@@ -304,7 +304,7 @@ int sgm4151x_enable_charger(struct sgm4151x_device *sgm, u8 chg_en)
     int ret;
 	u8 reg_val;
 
-    //dev_notice(sgm->dev, "%s:%d", __func__, chg_en);
+    dev_notice(sgm->dev, "%s:%d", __func__, chg_en);
 	ret = sgm4151x_read_reg(sgm, SGM4151x_CHRG_CTRL_1, &reg_val);
 	if (ret){
 		pr_err("%s read SGM4151x_CHRG_CTRL_1 fail\n",__func__);
@@ -314,16 +314,19 @@ int sgm4151x_enable_charger(struct sgm4151x_device *sgm, u8 chg_en)
 	reg_val = reg_val & SGM4151x_CHRG_EN;
 	//dev_notice(sgm->dev, "%s:reg00 = 0x%x-------111", __func__, reg_val);
 	chg_en = chg_en << 4;
-	if(reg_val != chg_en)
+	if(reg_val == chg_en)
+		pr_info("%s SGM4151x chg_en set already\n",__func__);
+	else{
     	ret = sgm4151x_update_bits(sgm, SGM4151x_CHRG_CTRL_1, SGM4151x_CHRG_EN,
                      chg_en);
+	}
     return ret;
 }
 
 static int sgm4151x_set_vac_ovp(struct sgm4151x_device *sgm,enum SGM4151x_OVP volt)
 {
 	int reg_val;
-
+	
 	reg_val = volt<<6;
 
 	return sgm4151x_update_bits(sgm, SGM4151x_CHRG_CTRL_6,
@@ -333,7 +336,7 @@ static int sgm4151x_set_vac_ovp(struct sgm4151x_device *sgm,enum SGM4151x_OVP vo
 static int sgm4151x_set_recharge_volt(struct sgm4151x_device *sgm, int recharge_volt)
 {
 	int reg_val;
-
+	
 	reg_val = (recharge_volt - SGM4151x_VRECHRG_OFFSET_mV) / SGM4151x_VRECHRG_STEP_mV;
 
 	return sgm4151x_update_bits(sgm, SGM4151x_CHRG_CTRL_4,

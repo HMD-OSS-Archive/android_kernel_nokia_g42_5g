@@ -8250,8 +8250,8 @@ __perf_event_account_interrupt(struct perf_event *event, int throttle)
 		hwc->interrupts = 1;
 	} else {
 		hwc->interrupts++;
-		if (unlikely(throttle &&
-			     hwc->interrupts > max_samples_per_tick)) {
+		if (unlikely(throttle
+			     && hwc->interrupts >= max_samples_per_tick)) {
 			__this_cpu_inc(perf_throttled_count);
 			tick_dep_set_cpu(smp_processor_id(), TICK_DEP_BIT_PERF_EVENTS);
 			hwc->interrupts = MAX_INTERRUPTS;
@@ -10119,15 +10119,13 @@ static int pmu_dev_alloc(struct pmu *pmu)
 
 	pmu->dev->groups = pmu->attr_groups;
 	device_initialize(pmu->dev);
-
-	dev_set_drvdata(pmu->dev, pmu);
-	pmu->dev->bus = &pmu_bus;
-	pmu->dev->release = pmu_dev_release;
-
 	ret = dev_set_name(pmu->dev, "%s", pmu->name);
 	if (ret)
 		goto free_dev;
 
+	dev_set_drvdata(pmu->dev, pmu);
+	pmu->dev->bus = &pmu_bus;
+	pmu->dev->release = pmu_dev_release;
 	ret = device_add(pmu->dev);
 	if (ret)
 		goto free_dev;
@@ -11011,7 +11009,7 @@ perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
 	/*
 	 * If its not a per-cpu rb, it must be the same task.
 	 */
-	if (output_event->cpu == -1 && output_event->hw.target != event->hw.target)
+	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
 		goto out;
 
 	/*
@@ -11180,7 +11178,7 @@ SYSCALL_DEFINE5(perf_event_open,
 	struct perf_event *group_leader = NULL, *output_event = NULL;
 	struct perf_event *event = NULL, *sibling;
 	struct perf_event_attr attr;
-	struct perf_event_context *ctx, *gctx;
+	struct perf_event_context *ctx, *uninitialized_var(gctx);
 	struct file *event_file = NULL;
 	struct fd group = {NULL, 0};
 	struct task_struct *task = NULL;
@@ -11195,12 +11193,12 @@ SYSCALL_DEFINE5(perf_event_open,
 	if (flags & ~PERF_FLAG_ALL)
 		return -EINVAL;
 
-	err = perf_copy_attr(attr_uptr, &attr);
+	/* Do we allow access to perf_event_open(2) ? */
+	err = security_perf_event_open(&attr, PERF_SECURITY_OPEN);
 	if (err)
 		return err;
 
-	/* Do we allow access to perf_event_open(2) ? */
-	err = security_perf_event_open(&attr, PERF_SECURITY_OPEN);
+	err = perf_copy_attr(attr_uptr, &attr);
 	if (err)
 		return err;
 

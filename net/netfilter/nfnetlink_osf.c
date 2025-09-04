@@ -269,7 +269,6 @@ bool nf_osf_find(const struct sk_buff *skb,
 	struct nf_osf_hdr_ctx ctx;
 	const struct tcphdr *tcp;
 	struct tcphdr _tcph;
-	bool found = false;
 
 	memset(&ctx, 0, sizeof(ctx));
 
@@ -284,11 +283,10 @@ bool nf_osf_find(const struct sk_buff *skb,
 
 		data->genre = f->genre;
 		data->version = f->version;
-		found = true;
 		break;
 	}
 
-	return found;
+	return true;
 }
 EXPORT_SYMBOL_GPL(nf_osf_find);
 
@@ -440,4 +438,3 @@ module_init(nfnl_osf_init);
 module_exit(nfnl_osf_fini);
 
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_NFNL_SUBSYS(NFNL_SUBSYS_OSF);

@@ -244,18 +244,21 @@ static void iavf_irq_disable(struct iavf_adapter *adapter)
 }
 
 /**
- * iavf_irq_enable_queues - Enable interrupt for all queues
+ * iavf_irq_enable_queues - Enable interrupt for specified queues
  * @adapter: board private structure
+ * @mask: bitmap of queues to enable
  **/
-void iavf_irq_enable_queues(struct iavf_adapter *adapter)
+void iavf_irq_enable_queues(struct iavf_adapter *adapter, u32 mask)
 {
 	struct iavf_hw *hw = &adapter->hw;
 	int i;
 
 	for (i = 1; i < adapter->num_msix_vectors; i++) {
-		wr32(hw, IAVF_VFINT_DYN_CTLN1(i - 1),
-		     IAVF_VFINT_DYN_CTLN1_INTENA_MASK |
-		     IAVF_VFINT_DYN_CTLN1_ITR_INDX_MASK);
+		if (mask & BIT(i - 1)) {
+			wr32(hw, IAVF_VFINT_DYN_CTLN1(i - 1),
+			     IAVF_VFINT_DYN_CTLN1_INTENA_MASK |
+			     IAVF_VFINT_DYN_CTLN1_ITR_INDX_MASK);
+		}
 	}
 }
 
@@ -269,7 +272,7 @@ void iavf_irq_enable(struct iavf_adapter *adapter, bool flush)
 	struct iavf_hw *hw = &adapter->hw;
 
 	iavf_misc_irq_enable(adapter);
-	iavf_irq_enable_queues(adapter);
+	iavf_irq_enable_queues(adapter, ~0);
 
 	if (flush)
 		iavf_flush(hw);
@@ -2578,7 +2581,6 @@ static int iavf_validate_ch_config(struct iavf_adapter *adapter,
 				   struct tc_mqprio_qopt_offload *mqprio_qopt)
 {
 	u64 total_max_rate = 0;
-	u32 tx_rate_rem = 0;
 	int i, num_qps = 0;
 	u64 tx_rate = 0;
 	int ret = 0;
@@ -2593,32 +2595,12 @@ static int iavf_validate_ch_config(struct iavf_adapter *adapter,
 			return -EINVAL;
 		if (mqprio_qopt->min_rate[i]) {
 			dev_err(&adapter->pdev->dev,
-				"Invalid min tx rate (greater than 0) specified for TC%d\n",
-				i);
+				"Invalid min tx rate (greater than 0) specified\n");
 			return -EINVAL;
 		}
-
-		/* convert to Mbps */
+		/*convert to Mbps */
 		tx_rate = div_u64(mqprio_qopt->max_rate[i],
 				  IAVF_MBPS_DIVISOR);
-
-		if (mqprio_qopt->max_rate[i] &&
-		    tx_rate < IAVF_MBPS_QUANTA) {
-			dev_err(&adapter->pdev->dev,
-				"Invalid max tx rate for TC%d, minimum %dMbps\n",
-				i, IAVF_MBPS_QUANTA);
-			return -EINVAL;
-		}
-
-		(void)div_u64_rem(tx_rate, IAVF_MBPS_QUANTA, &tx_rate_rem);
-
-		if (tx_rate_rem != 0) {
-			dev_err(&adapter->pdev->dev,
-				"Invalid max tx rate for TC%d, not divisible by %d\n",
-				i, IAVF_MBPS_QUANTA);
-			return -EINVAL;
-		}
-
 		total_max_rate += tx_rate;
 		num_qps += mqprio_qopt->qopt.count[i];
 	}

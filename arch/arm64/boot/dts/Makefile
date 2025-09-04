@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-ifdef CONFIG_DTB_ORIGINAL
 subdir-y += actions
 subdir-y += al
 subdir-y += allwinner
@@ -29,7 +28,6 @@ subdir-y += synaptics
 subdir-y += ti
 subdir-y += xilinx
 subdir-y += zte
-endif # CONFIG_DTB_ORIGINAL
 
 dtstree	:= $(srctree)/$(src)
 vendor  := $(dtstree)/vendor

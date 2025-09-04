@@ -455,7 +455,6 @@ bool odm_DigAbort(void *pDM_VOID)
 		return	true;
 	}
 
-	/* add by Neil Chen to avoid PSD is processing */
 	if (pDM_Odm->bDMInitialGainEnable == false) {
 		ODM_RT_TRACE(pDM_Odm, ODM_COMP_DIG, ODM_DBG_LOUD, ("odm_DIG(): Return: PSD is Processing\n"));
 		return	true;
@@ -1199,7 +1198,6 @@ void ODM_Write_CCK_CCA_Thres(void *pDM_VOID, u8 CurCCK_CCAThres)
 	PDM_ODM_T pDM_Odm = (PDM_ODM_T)pDM_VOID;
 	pDIG_T pDM_DigTable = &pDM_Odm->DM_DigTable;
 
-	/* modify by Guo.Mingzhi 2012-01-03 */
 	if (pDM_DigTable->CurCCK_CCAThres != CurCCK_CCAThres)
 		rtw_write8(pDM_Odm->Adapter, ODM_REG(CCK_CCA, pDM_Odm), CurCCK_CCAThres);
 

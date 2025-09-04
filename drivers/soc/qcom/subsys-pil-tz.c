@@ -28,9 +28,7 @@
 
 #include <linux/soc/qcom/smem.h>
 #include <linux/soc/qcom/smem_state.h>
-// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 begin
 #include <linux/reboot.h>
-// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 end
 #include "peripheral-loader.h"
 
 #define PIL_TZ_AVG_BW  0
@@ -831,13 +829,11 @@ static int subsys_powerup(const struct subsys_desc *subsys)
 	ret = pil_boot(&d->desc);
 	if (ret) {
 		pr_err("pil_boot failed for %s\n",  d->subsys_desc.name);
-		// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 begin
 		if (strncmp(d->subsys_desc.name, "modem", sizeof("modem")) == 0) {
 			//reboot and stop in abl.
 			pr_err("Modem image is unsigned or corrupt, now reboot to red screen!\n");
 			kernel_restart("modem_unsigned");
 		}
-		// Add by zhixue.chang for reboot to red screen if check modem is not signed 20230118 end
 		return ret;
 	}
 
@@ -889,10 +885,6 @@ static int subsys_ramdump(int enable, const struct subsys_desc *subsys)
 
 	if (!enable)
 		return 0;
-#ifdef CONFIG_QGKI_MSM_BOOT_TIME_MARKER
-	if (!strcmp(subsys->name, "modem"))
-		update_marker("M - Modem Dump start");
-#endif
 
 	return pil_do_ramdump(&d->desc, d->ramdump_dev, d->minidump_dev);
 }
@@ -937,10 +929,6 @@ static irqreturn_t subsys_err_fatal_intr_handler (int irq, void *drv_data)
 							d->subsys_desc.name);
 		return IRQ_HANDLED;
 	}
-#ifdef CONFIG_QGKI_MSM_BOOT_TIME_MARKER
-	if (!strcmp(d->subsys_desc.name, "modem"))
-		update_marker("M - Modem crash");
-#endif
 	subsys_set_crash_status(d->subsys, CRASH_STATUS_ERR_FATAL);
 	log_failure_reason(d);
 	subsystem_restart_dev(d->subsys);

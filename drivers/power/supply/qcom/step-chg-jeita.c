@@ -524,17 +524,17 @@ static void get_config_work(struct work_struct *work)
 	chip->config_is_read = true;
 
 	for (i = 0; i < MAX_STEP_CHG_ENTRIES; i++)
-		pr_debug("step-chg-cfg: %duV(SoC) ~ %duV(SoC), %duA\n",
+		pr_err("step-chg-cfg: %duV(SoC) ~ %duV(SoC), %duA\n",
 			chip->step_chg_config->fcc_cfg[i].low_threshold,
 			chip->step_chg_config->fcc_cfg[i].high_threshold,
 			chip->step_chg_config->fcc_cfg[i].value);
 	for (i = 0; i < MAX_STEP_CHG_ENTRIES; i++)
-		pr_debug("jeita-fcc-cfg: %ddecidegree ~ %ddecidegre, %duA\n",
+		pr_err("jeita-fcc-cfg: %ddecidegree ~ %ddecidegre, %duA\n",
 			chip->jeita_fcc_config->fcc_cfg[i].low_threshold,
 			chip->jeita_fcc_config->fcc_cfg[i].high_threshold,
 			chip->jeita_fcc_config->fcc_cfg[i].value);
 	for (i = 0; i < MAX_STEP_CHG_ENTRIES; i++)
-		pr_debug("jeita-fv-cfg: %ddecidegree ~ %ddecidegre, %duV\n",
+		pr_err("jeita-fv-cfg: %ddecidegree ~ %ddecidegre, %duV\n",
 			chip->jeita_fv_config->fv_cfg[i].low_threshold,
 			chip->jeita_fv_config->fv_cfg[i].high_threshold,
 			chip->jeita_fv_config->fv_cfg[i].value);
@@ -763,7 +763,7 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 			else{
 				pval.intval = 0;
 				power_supply_set_property(chip->sgm_psy, POWER_SUPPLY_PROP_STATUS, &pval);
-				//pr_info("charge type not fast slave charger disable\n");
+				pr_info("charge type not fast slave charger disable\n");
 			}
 		}
 		else{

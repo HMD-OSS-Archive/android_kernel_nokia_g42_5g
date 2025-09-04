@@ -232,11 +232,7 @@ struct smb5 {
 	struct iio_chan_spec	*iio_chan_ids;
 };
 
-#ifdef DUAL_85_VERSION
-static int __debug_mask = 0x7;
-#else
-static int __debug_mask = 0x15;
-#endif
+static int __debug_mask = 0x14;
 
 static ssize_t pd_disabled_show(struct device *dev, struct device_attribute
 				*attr, char *buf)

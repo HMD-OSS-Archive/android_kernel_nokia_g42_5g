@@ -9,7 +9,6 @@ LEDs
 
    leds-class
    leds-class-flash
-   leds-class-multicolor
    ledtrig-oneshot
    ledtrig-transient
    ledtrig-usbport

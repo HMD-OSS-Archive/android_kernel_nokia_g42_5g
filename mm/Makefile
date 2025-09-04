@@ -108,7 +108,6 @@ obj-$(CONFIG_PERCPU_STATS) += percpu-stats.o
 obj-$(CONFIG_ZONE_DEVICE) += memremap.o
 obj-$(CONFIG_HMM_MIRROR) += hmm.o
 obj-$(CONFIG_MEMFD_CREATE) += memfd.o
-## add by hao.huang
 obj-$(CONFIG_HYPERHOLD) += memcg_reclaim.o
 obj-$(CONFIG_HYPERHOLD) += memcg_control.o
 #[enter]add FEATURE_MULTI_FREEAREA

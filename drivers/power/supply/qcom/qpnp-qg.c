@@ -3308,10 +3308,6 @@ static int qg_determine_pon_soc(struct qpnp_qg *chip)
 	if (!shutdown[SDAM_VALID])
 		goto use_pon_ocv;
 
-	/* SDT-6863 follow hmd solution */
-	if(shutdown[SDAM_SOC] < pon_soc)
-		goto use_shutdown_ocv;
-
 	if (!is_between(0, chip->dt.ignore_shutdown_soc_secs,
 			(rtc_sec - shutdown[SDAM_TIME_SEC])))
 		goto use_pon_ocv;
@@ -3325,8 +3321,6 @@ static int qg_determine_pon_soc(struct qpnp_qg *chip)
 			!is_between(0, chip->dt.shutdown_soc_threshold,
 			abs(pon_soc - shutdown[SDAM_SOC])))
 		goto use_pon_ocv;
-
-use_shutdown_ocv:
 
 	use_pon_ocv = false;
 	ocv_uv = shutdown[SDAM_OCV_UV];
@@ -4403,7 +4397,7 @@ static int qg_parse_dt(struct qpnp_qg *chip)
 	else
 		chip->dt.esr_low_temp_threshold = (int)temp;
 
-	rc = of_property_read_u32(node, "qcom,shutdown-soc-threshold", &temp);
+	rc = of_property_read_u32(node, "qcom,shutdown_soc_threshold", &temp);
 	if (rc < 0)
 		chip->dt.shutdown_soc_threshold = -EINVAL;
 	else

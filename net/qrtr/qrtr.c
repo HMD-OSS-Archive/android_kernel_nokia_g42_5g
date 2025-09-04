@@ -142,7 +142,6 @@ static DEFINE_SPINLOCK(qrtr_port_lock);
 #define QRTR_BACKUP_HI_SIZE	SZ_16K
 #define QRTR_BACKUP_LO_NUM	20
 #define QRTR_BACKUP_LO_SIZE	SZ_1K
-
 static struct sk_buff_head qrtr_backup_lo;
 static struct sk_buff_head qrtr_backup_hi;
 static struct work_struct qrtr_backup_work;
@@ -191,7 +190,6 @@ struct qrtr_node {
 
 	struct wakeup_source *ws;
 	void *ilc;
-
 	u32 nonwake_svc[MAX_NON_WAKE_SVC_LEN];
 };
 
@@ -268,7 +266,7 @@ static void qrtr_log_tx_msg(struct qrtr_node *node, struct qrtr_hdr_v1 *hdr,
 				  type, hdr->src_node_id);
 			if (le32_to_cpu(hdr->dst_node_id) == 0 ||
 			    le32_to_cpu(hdr->dst_node_id) == 3) {
-				update_marker("M - Modem QMI Readiness TX");
+				place_marker("M - Modem QMI Readiness TX");
 				pr_err("qrtr: Modem QMI Readiness TX cmd:0x%x node[0x%x]\n",
 				       type, hdr->src_node_id);
 			}
@@ -340,7 +338,7 @@ static void qrtr_log_rx_msg(struct qrtr_node *node, struct sk_buff *skb)
 				  "RX CTRL: cmd:0x%x node[0x%x]\n",
 				  cb->type, cb->src_node);
 			if (cb->src_node == 0 || cb->src_node == 3) {
-				update_marker("M - Modem QMI Readiness RX");
+				place_marker("M - Modem QMI Readiness RX");
 				pr_err("qrtr: Modem QMI Readiness RX cmd:0x%x node[0x%x]\n",
 				       cb->type, cb->src_node);
 			}
@@ -841,7 +839,7 @@ int qrtr_endpoint_post(struct qrtr_endpoint *ep, const void *data, size_t len)
 	size_t size;
 	unsigned int ver;
 	size_t hdrlen;
-	int errcode, i;
+        int errcode, i;
 	bool wake = true;
 	int svc_id;
 
@@ -950,17 +948,16 @@ int qrtr_endpoint_post(struct qrtr_endpoint *ep, const void *data, size_t len)
 				}
 			}
 		}
+		
+ 		if (sock_queue_rcv_skb(&ipc->sk, skb))
+ 			goto err;
 
-		if (sock_queue_rcv_skb(&ipc->sk, skb))
-			goto err;
-
-		/**
-		 * Force wakeup for all packets except for sensors and blacklisted services
-		 * from adsp side
-		 */
-		if ((node->nid != 9 && node->nid != 5) ||
-		    (node->nid == 5 && wake))
-			pm_wakeup_ws_event(node->ws, qrtr_wakeup_ms, true);
+ 		/**
+ 		* Force wakeup for all packets except for sensors and blacklisted services
+ 		* from adsp side
+ 		*/
+ 		if ((node->nid != 9 && node->nid != 5) || (node->nid == 5 && wake))
+ 			pm_wakeup_ws_event(node->ws, qrtr_wakeup_ms, true);
 
 		qrtr_port_put(ipc);
 	}
@@ -1170,7 +1167,7 @@ static void qrtr_hello_work(struct kthread_work *work)
  * The specified endpoint must have the xmit function pointer set on call.
  */
 int qrtr_endpoint_register(struct qrtr_endpoint *ep, unsigned int net_id,
-			   bool rt, u32 *svc_arr)
+		          bool rt, u32 *svc_arr)
 {
 	struct qrtr_node *node;
 	struct sched_param param = {.sched_priority = 1};

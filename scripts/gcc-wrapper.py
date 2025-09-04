@@ -77,4 +77,3 @@ def run_gcc():
 if __name__ == '__main__':
     status = run_gcc()
     sys.exit(status)
-    #sys.close(status)

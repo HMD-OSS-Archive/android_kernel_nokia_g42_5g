@@ -315,9 +315,6 @@ const char * const migratetype_names[MIGRATE_TYPES] = {
 #ifdef CONFIG_MEMORY_ISOLATION
 	"Isolate",
 #endif
-#ifdef CONFIG_EMERGENCY_MEMORY
-	"Emergency",
-#endif
 };
 
 compound_page_dtor * const compound_page_dtors[] = {
@@ -2789,41 +2786,6 @@ static bool unreserve_highatomic_pageblock(const struct alloc_context *ac,
 	return false;
 }
 
-#ifdef CONFIG_EMERGENCY_MEMORY
-/* Initialization of the migration type MIGRATE_EMERGENCY */
-void __init emergency_mm_init(void)
-{
-	/*
-	 * If  pageblock_order < MAX_ORDER - 1 ,then allocating a few pageblocks may
-	 * cause the buddy system to merge two pageblocks of different migration types,
-	 * for example, MIGRATE_EMERGENCY and MIGRATE_MOVABLE.
-	 */
-	if (pageblock_order == MAX_ORDER - 1) {
-		int nid = 0;
-		pr_info("start to setup MIGRATE_EMERGENCY reserved memory.");
-		for_each_online_node(nid) {
-			pg_data_t *pgdat = NODE_DATA(nid);
-			struct zone *zone = &pgdat->node_zones[ZONE_NORMAL];
-			while (zone->nr_reserved_emergency < MAX_MANAGED_EMERGENCY) {
-				struct page *page = alloc_pages(___GFP_MOVABLE, pageblock_order);
-				if (page == NULL) {
-				 	pr_warn("node id %d MIGRATE_EMERGENCY reserved "
-						"pages failed, reserved %d pages.",
-						nid, zone->nr_reserved_emergency);
-					break;
-				}
-				set_pageblock_migratetype(page, MIGRATE_EMERGENCY);
-				__free_pages(page, pageblock_order);
-				zone->nr_reserved_emergency += pageblock_nr_pages;
-			}
-			pr_info("node id %d MIGRATE_EMERGENCY reserved %d pages.",
-				nid, zone->nr_reserved_emergency);
-
-		}
-	}
-}
-#endif
-
 /*
  * Try finding a free buddy page on the fallback list and put it on the free
  * list of requested migratetype, possibly along with other pages from the same
@@ -3974,50 +3936,6 @@ alloc_flags_nofragment(struct zone *zone, gfp_t gfp_mask)
 	return alloc_flags;
 }
 
-#ifdef CONFIG_EMERGENCY_MEMORY
-/*
- * get_emergency_page_from_freelist allocates pages in reserved memory
- * in the migration type MIGRATE_EMERGENCY.
- */
-static struct page *get_emergency_page_from_freelist(gfp_t gfp_mask, unsigned int order,
-			int alloc_flags, const struct alloc_context *ac, int migratetype)
-{
-	struct page *page = NULL;
-
-	if (ac->high_zoneidx >= ZONE_NORMAL) {
-		struct zoneref *z = ac->preferred_zoneref;
-		struct pglist_data *pgdat = NODE_DATA(zonelist_node_idx(z));
-		struct zone *zone = &pgdat->node_zones[ZONE_NORMAL];
-		unsigned long flags;
-
-		if (cpusets_enabled() &&
-			(alloc_flags & ALLOC_CPUSET) &&
-			!__cpuset_zone_allowed(zone, gfp_mask))
-			return NULL;
-
-		spin_lock_irqsave(&zone->lock, flags);
-		do {
-			page = __rmqueue_smallest(zone, order, migratetype);
-		} while (page && check_new_pages(page, order));
-
-		spin_unlock(&zone->lock);
-
-		if (page) {
-			__mod_zone_freepage_state(zone, -(1 << order),
-						  get_pcppage_migratetype(page));
-
-			__count_zid_vm_events(PGALLOC, page_zonenum(page), 1 << order);
-			zone_statistics(z->zone, zone);
-			prep_new_page(page, order, gfp_mask, alloc_flags);
-		}
-		local_irq_restore(flags);
-	}
-
-	return page;
-
-}
-#endif
-
 /*
  * get_page_from_freelist goes through the zonelist trying to allocate
  * a page.
@@ -4568,30 +4486,6 @@ void fs_reclaim_release(gfp_t gfp_mask)
 EXPORT_SYMBOL_GPL(fs_reclaim_release);
 #endif
 
-/*
- * Zonelists may change due to hotplug during allocation. Detect when zonelists
- * have been rebuilt so allocation retries. Reader side does not lock and
- * retries the allocation if zonelist changes. Writer side is protected by the
- * embedded spin_lock.
- */
-static DEFINE_SEQLOCK(zonelist_update_seq);
-
-static unsigned int zonelist_iter_begin(void)
-{
-	if (IS_ENABLED(CONFIG_MEMORY_HOTREMOVE))
-		return read_seqbegin(&zonelist_update_seq);
-
-	return 0;
-}
-
-static unsigned int check_retry_zonelist(unsigned int seq)
-{
-	if (IS_ENABLED(CONFIG_MEMORY_HOTREMOVE))
-		return read_seqretry(&zonelist_update_seq, seq);
-
-	return seq;
-}
-
 /* Perform direct synchronous page reclaim */
 static int
 __perform_reclaim(gfp_t gfp_mask, unsigned int order,
@@ -4900,7 +4794,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	int compaction_retries;
 	int no_progress_loops;
 	unsigned int cpuset_mems_cookie;
-	unsigned int zonelist_iter_cookie;
 	int reserve_flags;
 
 	/*
@@ -4911,12 +4804,11 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 				(__GFP_ATOMIC|__GFP_DIRECT_RECLAIM)))
 		gfp_mask &= ~__GFP_ATOMIC;
 
-restart:
+retry_cpuset:
 	compaction_retries = 0;
 	no_progress_loops = 0;
 	compact_priority = DEF_COMPACT_PRIORITY;
 	cpuset_mems_cookie = read_mems_allowed_begin();
-	zonelist_iter_cookie = zonelist_iter_begin();
 
 	/*
 	 * The fast path uses conservative alloc_flags to succeed only until
@@ -5093,13 +4985,9 @@ retry:
 		goto retry;
 
 
-	/*
-	 * Deal with possible cpuset update races or zonelist updates to avoid
-	 * a unnecessary OOM kill.
-	 */
-	if (check_retry_cpuset(cpuset_mems_cookie, ac) ||
-	    check_retry_zonelist(zonelist_iter_cookie))
-		goto restart;
+	/* Deal with possible cpuset update races before we start OOM killing */
+	if (check_retry_cpuset(cpuset_mems_cookie, ac))
+		goto retry_cpuset;
 
 	/* Reclaim has failed us, start killing things */
 	page = __alloc_pages_may_oom(gfp_mask, order, ac, &did_some_progress);
@@ -5119,13 +5007,9 @@ retry:
 	}
 
 nopage:
-	/*
-	 * Deal with possible cpuset update races or zonelist updates to avoid
-	 * a unnecessary OOM kill.
-	 */
-	if (check_retry_cpuset(cpuset_mems_cookie, ac) ||
-	    check_retry_zonelist(zonelist_iter_cookie))
-		goto restart;
+	/* Deal with possible cpuset update races before we fail */
+	if (check_retry_cpuset(cpuset_mems_cookie, ac))
+		goto retry_cpuset;
 
 	/*
 	 * Make sure that __GFP_NOFAIL request doesn't leak out and make sure
@@ -5168,18 +5052,6 @@ nopage:
 		goto retry;
 	}
 fail:
-#ifdef CONFIG_EMERGENCY_MEMORY
-	if (!(gfp_mask & __GFP_NOWARN) && !costly_order) {
-		/*
-		 * If this allocation belongs to non-costly non-NOWARN page allocation,
-		 * then uses the reserved memory in the migration type MIGRATE_EMERGENCY.
-		 */
-		page = get_emergency_page_from_freelist(gfp_mask, order, alloc_flags, ac,
-			 MIGRATE_EMERGENCY);
-		if (page)
-			goto got_pg;
-	}
-#endif
 	warn_alloc(gfp_mask, ac->nodemask,
 			"page allocation failure: order:%u", order);
 got_pg:
@@ -5451,18 +5323,6 @@ refill:
 		/* reset page count bias and offset to start of new frag */
 		nc->pagecnt_bias = PAGE_FRAG_CACHE_MAX_SIZE + 1;
 		offset = size - fragsz;
-		if (unlikely(offset < 0)) {
-			/*
-			 * The caller is trying to allocate a fragment
-			 * with fragsz > PAGE_SIZE but the cache isn't big
-			 * enough to satisfy the request, this may
-			 * happen in low memory conditions.
-			 * We don't release the cache page because
-			 * it could make memory pressure worse
-			 * so we simply return NULL here.
-			 */
-			return NULL;
-		}
 	}
 
 	nc->pagecnt_bias--;
@@ -5768,9 +5628,6 @@ static void show_migration_types(unsigned char type)
 #ifdef CONFIG_FCMA
 		[MIGRATE_FCMA]		= 'F',
 #endif
-#endif
-#ifdef CONFIG_EMERGENCY_MEMORY
-		[MIGRATE_EMERGENCY]  = 'G',
 #endif
 #ifdef CONFIG_MEMORY_ISOLATION
 		[MIGRATE_ISOLATE]	= 'I',
@@ -6337,22 +6194,9 @@ static void __build_all_zonelists(void *data)
 	int nid;
 	int __maybe_unused cpu;
 	pg_data_t *self = data;
-	unsigned long flags;
+	static DEFINE_SPINLOCK(lock);
 
-	/*
-	 * Explicitly disable this CPU's interrupts before taking seqlock
-	 * to prevent any IRQ handler from calling into the page allocator
-	 * (e.g. GFP_ATOMIC) that could hit zonelist_iter_begin and livelock.
-	 */
-	local_irq_save(flags);
-	/*
-	 * Explicitly disable this CPU's synchronous printk() before taking
-	 * seqlock to prevent any printk() from trying to hold port->lock, for
-	 * tty_insert_flip_string_and_push_buffer() on other CPU might be
-	 * calling kmalloc(GFP_ATOMIC | __GFP_NOWARN) with port->lock held.
-	 */
-	printk_deferred_enter();
-	write_seqlock(&zonelist_update_seq);
+	spin_lock(&lock);
 
 #ifdef CONFIG_NUMA
 	memset(node_load, 0, sizeof(node_load));
@@ -6385,9 +6229,7 @@ static void __build_all_zonelists(void *data)
 #endif
 	}
 
-	write_sequnlock(&zonelist_update_seq);
-	printk_deferred_exit();
-	local_irq_restore(flags);
+	spin_unlock(&lock);
 }
 
 static noinline void __init

@@ -75,10 +75,6 @@ static int msg_level = -1;
 module_param (msg_level, int, 0);
 MODULE_PARM_DESC (msg_level, "Override default message level");
 
-static int usb0_rx_skb_threshold = 500;
-module_param(usb0_rx_skb_threshold, int, 0644);
-MODULE_PARM_DESC(usb0_rx_skb_threshold, "Throttle rx traffic in USB3");
-
 /*-------------------------------------------------------------------------*/
 
 /* handles CDC Ethernet and many other network "bulk data" interfaces */
@@ -658,13 +654,9 @@ block:
 		if (netif_running (dev->net) &&
 		    !test_bit (EVENT_RX_HALT, &dev->flags) &&
 		    state != unlink_start) {
-			if ((!(dev->driver_info->flags & FLAG_THROTTLE_RX)) ||
-				((dev->driver_info->flags & FLAG_THROTTLE_RX) &&
-				(dev->done.qlen < usb0_rx_skb_threshold))) {
-				rx_submit(dev, urb, GFP_ATOMIC);
-				usb_mark_last_busy(dev->udev);
-				return;
-			}
+			rx_submit (dev, urb, GFP_ATOMIC);
+			usb_mark_last_busy(dev->udev);
+			return;
 		}
 		usb_free_urb (urb);
 	}
@@ -841,11 +833,13 @@ int usbnet_stop (struct net_device *net)
 
 	mpn = !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags);
 
-	/* deferred work (timer, softirq, task) must also stop */
+	/* deferred work (task, timer, softirq) must also stop.
+	 * can't flush_scheduled_work() until we drop rtnl (later),
+	 * else workers could deadlock; so make workers a NOP.
+	 */
 	dev->flags = 0;
 	del_timer_sync (&dev->delay);
 	tasklet_kill (&dev->bh);
-	cancel_work_sync(&dev->kevent);
 	if (!pm)
 		usb_autopm_put_interface(dev->intf);
 
@@ -1600,7 +1594,6 @@ void usbnet_disconnect (struct usb_interface *intf)
 	struct usbnet		*dev;
 	struct usb_device	*xdev;
 	struct net_device	*net;
-	struct urb		*urb;
 
 	dev = usb_get_intfdata(intf);
 	usb_set_intfdata(intf, NULL);
@@ -1617,11 +1610,9 @@ void usbnet_disconnect (struct usb_interface *intf)
 	net = dev->net;
 	unregister_netdev (net);
 
-	while ((urb = usb_get_from_anchor(&dev->deferred))) {
-		dev_kfree_skb(urb->context);
-		kfree(urb->sg);
-		usb_free_urb(urb);
-	}
+	cancel_work_sync(&dev->kevent);
+
+	usb_scuttle_anchored_urbs(&dev->deferred);
 
 	if (dev->driver_info->unbind)
 		dev->driver_info->unbind (dev, intf);

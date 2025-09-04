@@ -128,18 +128,6 @@ static const struct dmi_system_id orientation_data[] = {
 		  DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "One S1003"),
 		},
 		.driver_data = (void *)&lcd800x1280_rightside_up,
-	}, {	/* Acer Switch V 10 (SW5-017) */
-		.matches = {
-		  DMI_EXACT_MATCH(DMI_SYS_VENDOR, "Acer"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "SW5-017"),
-		},
-		.driver_data = (void *)&lcd800x1280_rightside_up,
-	}, {	/* Anbernic Win600 */
-		.matches = {
-		  DMI_EXACT_MATCH(DMI_BOARD_VENDOR, "Anbernic"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "Win600"),
-		},
-		.driver_data = (void *)&lcd720x1280_rightside_up,
 	}, {	/* Asus T100HA */
 		.matches = {
 		  DMI_EXACT_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
@@ -272,29 +260,10 @@ static const struct dmi_system_id orientation_data[] = {
 		  DMI_EXACT_MATCH(DMI_PRODUCT_VERSION, "Lenovo ideapad D330-10IGM"),
 		},
 		.driver_data = (void *)&lcd1200x1920_rightside_up,
-	}, {	/* Lenovo Ideapad D330-10IGL (HD) */
+	}, {	/* Lenovo Yoga Book X90F / X91F / X91L */
 		.matches = {
-		  DMI_EXACT_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_VERSION, "Lenovo ideapad D330-10IGL"),
-		},
-		.driver_data = (void *)&lcd800x1280_rightside_up,
-	}, {	/* Lenovo IdeaPad Duet 3 10IGL5 */
-		.matches = {
-		  DMI_EXACT_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_VERSION, "IdeaPad Duet 3 10IGL5"),
-		},
-		.driver_data = (void *)&lcd1200x1920_rightside_up,
-	}, {	/* Lenovo Yoga Book X90F / X90L */
-		.matches = {
-		  DMI_EXACT_MATCH(DMI_SYS_VENDOR, "Intel Corporation"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "CHERRYVIEW D1 PLATFORM"),
-		  DMI_EXACT_MATCH(DMI_PRODUCT_VERSION, "YETI-11"),
-		},
-		.driver_data = (void *)&lcd1200x1920_rightside_up,
-	}, {	/* Lenovo Yoga Book X91F / X91L */
-		.matches = {
-		  /* Non exact match to match F + L versions */
-		  DMI_MATCH(DMI_PRODUCT_NAME, "Lenovo YB1-X91"),
+		  /* Non exact match to match all versions */
+		  DMI_MATCH(DMI_PRODUCT_NAME, "Lenovo YB1-X9"),
 		},
 		.driver_data = (void *)&lcd1200x1920_rightside_up,
 	}, {	/* OneGX1 Pro */

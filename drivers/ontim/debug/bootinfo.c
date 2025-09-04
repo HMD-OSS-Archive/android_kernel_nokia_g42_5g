@@ -9,8 +9,8 @@
 
 
 static struct kobject *bootinfo_kobj = NULL;
+//extern int gesture_dubbleclick_en;
 int gesture_dubbleclick_en = 0;
-EXPORT_SYMBOL(gesture_dubbleclick_en);
 
 #if 0
 static ssize_t gesture_enable_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
@@ -75,7 +75,7 @@ static struct kobj_attribute i2c_devices_info_attr = {
 };
 
 static struct attribute * g[] = {
-	&i2c_devices_info_attr.attr,//+add by liuwei
+	&i2c_devices_info_attr.attr,
 	//&gesture_enable_attr.attr,
 	NULL,
 };

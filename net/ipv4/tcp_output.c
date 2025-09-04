@@ -1653,20 +1653,15 @@ static void tcp_cwnd_validate(struct sock *sk, bool is_cwnd_limited)
 	const struct tcp_congestion_ops *ca_ops = inet_csk(sk)->icsk_ca_ops;
 	struct tcp_sock *tp = tcp_sk(sk);
 
-	/* Track the strongest available signal of the degree to which the cwnd
-	 * is fully utilized. If cwnd-limited then remember that fact for the
-	 * current window. If not cwnd-limited then track the maximum number of
-	 * outstanding packets in the current window. (If cwnd-limited then we
-	 * chose to not update tp->max_packets_out to avoid an extra else
-	 * clause with no functional impact.)
+	/* Track the maximum number of outstanding packets in each
+	 * window, and remember whether we were cwnd-limited then.
 	 */
-	if (!before(tp->snd_una, tp->cwnd_usage_seq) ||
-	    is_cwnd_limited ||
-	    (!tp->is_cwnd_limited &&
-	     tp->packets_out > tp->max_packets_out)) {
-		tp->is_cwnd_limited = is_cwnd_limited;
+	if (!before(tp->snd_una, tp->max_packets_seq) ||
+	    tp->packets_out > tp->max_packets_out ||
+	    is_cwnd_limited) {
 		tp->max_packets_out = tp->packets_out;
-		tp->cwnd_usage_seq = tp->snd_nxt;
+		tp->max_packets_seq = tp->snd_nxt;
+		tp->is_cwnd_limited = is_cwnd_limited;
 	}
 
 	if (tcp_is_cwnd_limited(sk)) {
@@ -2919,7 +2914,7 @@ int __tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb, int segs)
 	struct tcp_sock *tp = tcp_sk(sk);
 	unsigned int cur_mss;
 	int diff, len, err;
-	int avail_wnd;
+
 
 	/* Inconclusive MTU probe */
 	if (icsk->icsk_mtup.probe_size)
@@ -2949,25 +2944,17 @@ int __tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb, int segs)
 		return -EHOSTUNREACH; /* Routing failure or similar. */
 
 	cur_mss = tcp_current_mss(sk);
-	avail_wnd = tcp_wnd_end(tp) - TCP_SKB_CB(skb)->seq;
 
 	/* If receiver has shrunk his window, and skb is out of
 	 * new window, do not retransmit it. The exception is the
 	 * case, when window is shrunk to zero. In this case
-	 * our retransmit of one segment serves as a zero window probe.
+	 * our retransmit serves as a zero window probe.
 	 */
-	if (avail_wnd <= 0) {
-		if (TCP_SKB_CB(skb)->seq != tp->snd_una)
-			return -EAGAIN;
-		avail_wnd = cur_mss;
-	}
+	if (!before(TCP_SKB_CB(skb)->seq, tcp_wnd_end(tp)) &&
+	    TCP_SKB_CB(skb)->seq != tp->snd_una)
+		return -EAGAIN;
 
 	len = cur_mss * segs;
-	if (len > avail_wnd) {
-		len = rounddown(avail_wnd, cur_mss);
-		if (!len)
-			len = avail_wnd;
-	}
 	if (skb->len > len) {
 		if (tcp_fragment(sk, TCP_FRAG_IN_RTX_QUEUE, skb, len,
 				 cur_mss, GFP_ATOMIC))
@@ -2981,9 +2968,8 @@ int __tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb, int segs)
 		diff -= tcp_skb_pcount(skb);
 		if (diff)
 			tcp_adjust_pcount(sk, skb, diff);
-		avail_wnd = min_t(int, avail_wnd, cur_mss);
-		if (skb->len < avail_wnd)
-			tcp_retrans_try_collapse(sk, skb, avail_wnd);
+		if (skb->len < cur_mss)
+			tcp_retrans_try_collapse(sk, skb, cur_mss);
 	}
 
 	/* RFC3168, section 6.1.1.1. ECN fallback */
@@ -3151,12 +3137,11 @@ void tcp_xmit_retransmit_queue(struct sock *sk)
  */
 void sk_forced_mem_schedule(struct sock *sk, int size)
 {
-	int delta, amt;
+	int amt;
 
-	delta = size - sk->sk_forward_alloc;
-	if (delta <= 0)
+	if (size <= sk->sk_forward_alloc)
 		return;
-	amt = sk_mem_pages(delta);
+	amt = sk_mem_pages(size);
 	sk->sk_forward_alloc += amt * SK_MEM_QUANTUM;
 	sk_memory_allocated_add(sk, amt);
 
@@ -3377,7 +3362,7 @@ struct sk_buff *tcp_make_synack(const struct sock *sk, struct dst_entry *dst,
 	th->window = htons(min(req->rsk_rcv_wnd, 65535U));
 	tcp_options_write((__be32 *)(th + 1), NULL, &opts);
 	th->doff = (tcp_header_size >> 2);
-	TCP_INC_STATS(sock_net(sk), TCP_MIB_OUTSEGS);
+	__TCP_INC_STATS(sock_net(sk), TCP_MIB_OUTSEGS);
 
 #ifdef CONFIG_TCP_MD5SIG
 	/* Okay, we have all we need - do the md5 hash if needed */
